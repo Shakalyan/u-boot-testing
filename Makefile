@@ -19,7 +19,8 @@ run: kernel.bin
 						-drive file=fat:rw:./rootfs,format=raw,media=disk,if=virtio \
 						-cpu rv64 \
 						-nographic \
-						-serial /dev/ttyS1 \
+						-serial pty \
+						&
 
 						#-chardev serial,path=/dev/ttyS0,id=hostusbserial \
 						#-device serial0,chardev=hostusbserial \
