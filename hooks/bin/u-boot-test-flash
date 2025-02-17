@@ -1,0 +1,4 @@
+#!/bin/bash
+#echo "${bin_dir}"
+#. "flash.${flash_impl}"
+. flash.none
