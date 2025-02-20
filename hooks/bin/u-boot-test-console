@@ -3,5 +3,10 @@
 . u-boot-tests-common
 
 echo "TEST_CONSOLE"
-pty=$(timeout 1 cat < $PLATFORM_OUT)
-screen $pty
+pty=$(timeout 3 cat < $PLATFORM_OUT)
+echo "PTY DEVICE: $pty"
+if [ -z $pty ]; then
+    echo "pty is none"
+    exit
+fi
+exec screen $pty
