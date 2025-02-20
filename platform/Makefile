@@ -2,6 +2,13 @@ KERNEL_ES = kernel.s kernel.ld
 U_BOOT_REPO = ../u-boot
 U_BOOT_BIN = $(U_BOOT_REPO)/u-boot.bin
 
+PTY_REDIRECT ?= yes
+QEMU_FLAGS = -machine virt -bios $(U_BOOT_BIN) -drive file=fat:rw:./rootfs,format=raw,media=disk,if=virtio -cpu rv64 -nographic
+
+ifeq ($(PTY_REDIRECT), yes)
+QEMU_FLAGS+= -serial pty
+endif
+
 $(U_BOOT_BIN):
 	make -C $(U_BOOT_REPO) qemu-riscv64_defconfig
 	make -C $(U_BOOT_REPO) CROSS_COMPILE=riscv64-unknown-linux-gnu- ARCH=riscv
@@ -16,13 +23,7 @@ kernel.bin: kernel.elf
 
 run: $(U_BOOT_BIN) kernel.bin
 	cp kernel.bin rootfs/
-	qemu-system-riscv64 -machine virt \
-						-bios $(U_BOOT_BIN) \
-						-drive file=fat:rw:./rootfs,format=raw,media=disk,if=virtio \
-						-cpu rv64 \
-						-nographic \
-						-serial pty
-
+	qemu-system-riscv64 $(QEMU_FLAGS)
 
 clean:
 	-rm *.bin *.elf *.o *.dis

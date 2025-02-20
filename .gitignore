@@ -3,3 +3,4 @@
 *.elf
 *.o
 *.pipe
+uboot-tests.txt
