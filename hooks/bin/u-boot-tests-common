@@ -1,0 +1,6 @@
+#!/bin/bash
+
+PLATFORM_DIR=/home/vvdovin/aqua/tests/riscv-qemu/uboot-tests/platform
+PLATFORM_IN=$PLATFORM_DIR/platform_in.pipe
+PLATFORM_OUT=$PLATFORM_DIR/platform_out.pipe
+

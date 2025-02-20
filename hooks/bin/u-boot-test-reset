@@ -1,3 +1,6 @@
 #!/bin/bash
 
-. reset.qemu
+. u-boot-tests-common
+
+echo "TEST_RESET"
+echo "reset" > $PLATFORM_IN

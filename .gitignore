@@ -2,3 +2,4 @@
 *.dis
 *.elf
 *.o
+*.pipe

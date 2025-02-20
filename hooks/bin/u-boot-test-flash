@@ -1,4 +1,6 @@
 #!/bin/bash
+
+echo "TEST_FLASH"
 echo "${bin_dir}"
 #. "flash.${flash_impl}"
 . flash.none
