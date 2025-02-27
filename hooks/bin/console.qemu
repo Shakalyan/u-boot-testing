@@ -1,0 +1,9 @@
+echo "CONSOLE_QEMU"
+
+pty=$(timeout 3 cat < $PLATFORM_OUT)
+echo "PTY DEVICE: $pty"
+if [ -z $pty ]; then
+    echo "pty is none"
+    exit
+fi
+exec screen $pty

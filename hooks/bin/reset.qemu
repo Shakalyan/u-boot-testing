@@ -1,1 +1,2 @@
-start.sh
+echo "RESET_QEMU"
+echo "reset" > $PLATFORM_IN
