@@ -1,2 +1,2 @@
 compile:
-	gcc -Wall -o gpt_generator.elf gpt_generator.c
+	gcc -Wall -o gpt_generator.elf gpt_generator.c crc.c
