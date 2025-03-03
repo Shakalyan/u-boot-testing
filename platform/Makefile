@@ -9,17 +9,19 @@ ifeq ($(PTY_REDIRECT), yes)
 QEMU_FLAGS+= -serial pty
 endif
 
+CC_pref = riscv64-unknown-linux-gnu
+
 $(U_BOOT_BIN):
 	make -C $(U_BOOT_REPO) qemu-riscv64_defconfig
-	make -C $(U_BOOT_REPO) CROSS_COMPILE=riscv64-unknown-linux-gnu- ARCH=riscv
+	make -C $(U_BOOT_REPO) CROSS_COMPILE=$(CC_pref)- ARCH=riscv
 
 kernel.elf: $(KERNEL_ES)
-	riscv64-unknown-elf-as -march=rv64i -mabi=lp64 -o kernel.o kernel.s
-	riscv64-unknown-elf-ld -T kernel.ld --no-dynamic-linker -m elf64lriscv -static -nostdlib -s -o kernel.elf kernel.o
-	riscv64-unknown-elf-objdump -D kernel.elf > kernel.dis
+	$(CC_pref)-as -march=rv64i -mabi=lp64 -o kernel.o kernel.s
+	$(CC_pref)-ld -T kernel.ld --no-dynamic-linker -m elf64lriscv -static -nostdlib -s -o kernel.elf kernel.o
+	$(CC_pref)-objdump -D kernel.elf > kernel.dis
 
 kernel.bin: kernel.elf
-	riscv64-unknown-elf-objcopy -O binary kernel.elf kernel.bin
+	$(CC_pref)-objcopy -O binary kernel.elf kernel.bin
 
 run: $(U_BOOT_BIN) kernel.bin
 	cp kernel.bin rootfs/
