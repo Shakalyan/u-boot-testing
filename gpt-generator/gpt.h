@@ -6,6 +6,16 @@
 #define SECTOR_SIZE ((512))
 #define ENTRY_SIZE  ((0x80))
 
+#define GPT_HEADER_SIGNATURE ((5452415020494645))
+#define GPT_HEADER_REVISION  ((0x10000))
+#define GPT_HEADER_LBA       ((1))
+
+#define GUID_SIZE ((16))
+
+// C12A7328-F81F-11d2-BA4B-00A0C93EC93B
+const uint8_t *const EFI_SYSTEM_PARTITION_GUID =
+    {0x28,0x73,0x2A,0xC1, 0x1F,0xF8, 0xd2,0x11, 0x4B,0xBA, 0x3B,0xC9,0x3E,0xC9,0xA0,0x00};
+
 typedef struct GPT_Header {
     uint64_t signature;
     uint32_t revision;
