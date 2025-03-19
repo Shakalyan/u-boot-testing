@@ -3,10 +3,17 @@ U_BOOT_REPO = ../u-boot
 U_BOOT_BIN = $(U_BOOT_REPO)/u-boot.bin
 
 PTY_REDIRECT ?= yes
-QEMU_FLAGS = -machine virt -bios $(U_BOOT_BIN) -drive file=fat:rw:./rootfs,format=raw,media=disk,if=virtio -cpu rv64 -nographic
+GPT_IMG ?= no
+QEMU_FLAGS = -machine virt -bios $(U_BOOT_BIN) -cpu rv64 -nographic
 
 ifeq ($(PTY_REDIRECT), yes)
 QEMU_FLAGS+= -serial pty
+endif
+
+ifeq ($(GPT_IMG), no)
+QEMU_FLAGS+= -drive file=fat:rw:./rootfs,format=raw,media=disk,if=virtio
+else
+QEMU_FLAGS+= -drive format=raw,file=gpt.img,media=disk,if=virtio
 endif
 
 CC_pref = riscv64-unknown-linux-gnu

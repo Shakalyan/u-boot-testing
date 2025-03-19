@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <unistd.h>
 
 #include "gpt.h"
 #include "crc.h"
@@ -13,12 +14,11 @@ const uint8_t PROTECTIVE_MBR_PARTITION_GUID[GUID_SIZE] =
     { 0x2, 0x4d, 0xee, 0x41, 0x33, 0xe7, 0x11, 0xd3, 0x9d, 0x69, 0x0, 0x8, 0xc7, 0x81, 0xf3, 0x9f };
 
 
-gpt_header_t* generate_gpt_header(ptr_gpt_entry_t entries, uint32_t entries_size,
+gpt_header_t* generate_gpt_header(ptr_gpt_entry_t entries, uint32_t entries_num,
                                   int is_primary, guid_t disk_guid)
 {
-    uint32_t entries_num = entries_size / sizeof(gpt_entry_t);
     gpt_header_t *header = calloc(1, sizeof(gpt_header_t));
-    ptr_gpt_entry_t first_entry = &entries[0], last_entry = &entries[entries_num-1];
+    ptr_gpt_entry_t last_entry = &entries[entries_num-1];
     uint64_t backup_gpt_lba = last_entry->ending_lba + (MINIMAL_GPT_ENTRY_ARRAY_SIZE / SECTOR_SIZE) + 1;
 
     header->signature = GPT_HEADER_SIGNATURE;
@@ -37,7 +37,7 @@ gpt_header_t* generate_gpt_header(ptr_gpt_entry_t entries, uint32_t entries_size
         header->partition_entry_lba = header->alternate_lba - 1;
     }
 
-    header->first_usable_lba = first_entry->starting_lba;
+    header->first_usable_lba = entries[1].starting_lba;
     header->last_usable_lba = last_entry->ending_lba;
     memcpy(header->disk_guid, disk_guid, GUID_SIZE);
     header->number_of_partition_entries = entries_num;
@@ -73,9 +73,13 @@ void add_gpt_entry(ptr_gpt_entry_t entries, int index,
     uint64_t starting_lba = 0, ending_lba = 0;
     ptr_gpt_entry_t entry = &entries[index];
 
-    if (index == 0) {
+    if (index == 0) { // MBR
+        starting_lba = 0;
+    }
+    else if (index == 1) {
         starting_lba = MINIMAL_GPT_ENTRY_ARRAY_SIZE / SECTOR_SIZE + GPT_HEADER_LBA + 1;
-    } else {
+    }
+    else {
         starting_lba = entries[index-1].ending_lba + 1;
     }
     ending_lba = starting_lba + size - 1;
@@ -134,4 +138,41 @@ void print_gpt_header(ptr_gpt_header_t header)
     printf("number of partition entries: %u\n", header->number_of_partition_entries);
     printf("size of partition entry: %u\n", header->size_of_partition_entry);
     printf("partition entry array crc32: %u\n", header->partition_entry_array_crc32);
+}
+
+// MBR | PRIMARY HEADER | PRIMARY ENTRIES | PARTITIONS | BACKUP_ENTRIES | BACKUP_HEADER
+//   0 |              1 |               2 |         34 |
+void make_gpt_image(int fd,
+                    uint8_t *mbr, uint8_t *partitions,
+                    ptr_gpt_header_t primary_header, ptr_gpt_header_t backup_header,
+                    ptr_gpt_entry_t entries)
+{
+    uint32_t partitions_size = (primary_header->last_usable_lba - primary_header->first_usable_lba + 1) * SECTOR_SIZE;
+
+    write(fd, mbr, SECTOR_SIZE);
+    write(fd, primary_header, sizeof(gpt_header_t));
+    write(fd, entries, primary_header->size_of_partition_entry);
+    write(fd, partitions, partitions_size);
+    write(fd, entries, backup_header->size_of_partition_entry);
+    write(fd, backup_header, sizeof(gpt_header_t));
+
+    // uint32_t size = SECTOR_SIZE + sizeof(gpt_header_t) + primary_header->size_of_partition_entry + partitions_size +
+    // printf()
+
+
+    // uint64_t image_size = (backup_header->my_lba + 1) * SECTOR_SIZE;
+    // uint8_t *image = calloc(1, image_size);
+    // uint8_t *primary_header_pos = image + SECTOR_SIZE;
+    // uint8_t *primary_entries_pos = image + sizeof(gpt_header_t);
+    // uint8_t *partitions_pos = primary_entries_pos + primary_header->size_of_partition_entry;
+    // uint8_t *backup_entries_pos = image + backup_header->partition_entry_lba * SECTOR_SIZE;
+    // uint8_t *backup_header_pos = backup_entries_pos + backup_header->size_of_partition_entry;
+
+    // // image - MBR
+    // memcpy(primary_header_pos, primary_header, sizeof(gpt_header_t));
+    // memcpy(primary_entries_pos, entries, primary_header->size_of_partition_entry);
+    // // partitions - zero
+    // memcpy(backup_entries_pos, entries, backup_header->size_of_partition_entry);
+    // memcpy(backup_header_pos, backup_header, sizeof(gpt_header_t));
+
 }

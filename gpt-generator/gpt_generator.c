@@ -1,5 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <string.h>
 
 #include "gpt.h"
 #include "crc.h"
@@ -18,13 +21,16 @@ const uint8_t DISK_1_GUID[GUID_SIZE] =
 
 int main(void)
 {
-    gpt_entry_t gpt_entries[2];
+    gpt_entry_t gpt_entries[128];
     ptr_gpt_header_t primary_header = NULL, backup_header = NULL;
+    uint8_t *zeroes = NULL;
+
+    memset(gpt_entries, 0, sizeof(gpt_entries));
 
     add_gpt_entry(gpt_entries, 0, PROTECTIVE_MBR_PARTITION_GUID, PARTITION_1_GUID, 1, 0, "protective MBR");
-    add_gpt_entry(gpt_entries, 1, EFI_SYSTEM_PARTITION_GUID, PARTITION_2_GUID, 1, 0, "efi system");
-    primary_header = generate_gpt_header(gpt_entries, sizeof(gpt_entries), 1, DISK_1_GUID);
-    backup_header = generate_gpt_header(gpt_entries, sizeof(gpt_entries), 0, DISK_1_GUID);
+    add_gpt_entry(gpt_entries, 1, EFI_SYSTEM_PARTITION_GUID, PARTITION_2_GUID, 10, 0, "efi system");
+    primary_header = generate_gpt_header(gpt_entries, 2, 1, DISK_1_GUID);
+    backup_header = generate_gpt_header(gpt_entries, 2, 0, DISK_1_GUID);
 
     printf("Primary Header:\n");
     print_gpt_header(primary_header);
@@ -34,11 +40,24 @@ int main(void)
     printf("\nPartition 2:\n");
     print_gpt_entry(&gpt_entries[1]);
 
-    //print_guid(PARTITION_1_GUID);
+
+    zeroes = calloc(1, 10 * SECTOR_SIZE);
+
+    int fd = open("gpt.img", O_CREAT | O_RDWR);
+    if (fd < 0) {
+        perror("open");
+        goto Free;
+    }
+
+
+
+    make_gpt_image(fd, zeroes, zeroes, primary_header, backup_header, gpt_entries);
 
 Free:
+    free(zeroes);
     free(primary_header);
     free(backup_header);
+    close(fd);
 
     return 0;
 }

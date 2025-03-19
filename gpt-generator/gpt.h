@@ -6,7 +6,7 @@
 #define SECTOR_SIZE ((512))
 #define ENTRY_SIZE  ((0x80))
 
-#define GPT_HEADER_SIGNATURE ((5452415020494645))
+#define GPT_HEADER_SIGNATURE ((0x5452415020494645))
 #define GPT_HEADER_REVISION  ((0x10000))
 #define GPT_HEADER_LBA       ((1))
 
@@ -75,7 +75,12 @@ void print_gpt_entry(ptr_gpt_entry_t entry);
 
 void print_gpt_header(ptr_gpt_header_t header);
 
-gpt_header_t* generate_gpt_header(ptr_gpt_entry_t entries, uint32_t entries_size,
+gpt_header_t* generate_gpt_header(ptr_gpt_entry_t entries, uint32_t entries_num,
                                   int is_primary, guid_t disk_guid);
+
+void make_gpt_image(int fd,
+                    uint8_t *mbr, uint8_t *partitions,
+                    ptr_gpt_header_t primary_header, ptr_gpt_header_t backup_header,
+                    ptr_gpt_entry_t entries);
 
 #endif

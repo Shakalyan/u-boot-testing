@@ -1,0 +1,6 @@
+*.bin
+*.dis
+*.elf
+*.o
+*.pipe
+gpt.img
