@@ -19,11 +19,14 @@ const uint8_t PARTITION_2_GUID[GUID_SIZE] =
 const uint8_t DISK_1_GUID[GUID_SIZE] =
     { 0xd7, 0x7b, 0xa9, 0xa1, 0x5e, 0xac, 0x4b, 0xad, 0xa9, 0x35, 0x27, 0x13, 0x46, 0x61, 0x7, 0x28 };
 
-int main(void)
+
+void generate_image(void)
 {
     gpt_entry_t gpt_entries[128];
     ptr_gpt_header_t primary_header = NULL, backup_header = NULL;
     uint8_t *zeroes = NULL;
+    uint8_t *gpt_image = NULL;
+    uint32_t gpt_image_size = 0;
 
     memset(gpt_entries, 0, sizeof(gpt_entries));
 
@@ -34,6 +37,8 @@ int main(void)
 
     printf("Primary Header:\n");
     print_gpt_header(primary_header);
+    printf("\nBackup Header:\n");
+    print_gpt_header(backup_header);
 
     printf("\nPartition 1:\n");
     print_gpt_entry(&gpt_entries[0]);
@@ -49,15 +54,66 @@ int main(void)
         goto Free;
     }
 
+    gpt_image = make_gpt_image(zeroes, zeroes, primary_header, backup_header, gpt_entries, &gpt_image_size);
+    printf("%u\n", gpt_image_size);
 
+    // for (int i = 0; i < gpt_image_size; ++i) {
+    //     if (gpt_image[i] != 0) {
+    //         printf("%d: %d\n", i, gpt_image[i]);
+    //         break;
+    //     }
+    // }
 
-    make_gpt_image(fd, zeroes, zeroes, primary_header, backup_header, gpt_entries);
+    write(fd, gpt_image, gpt_image_size);
+
+    for (int i = 0; i < 8; ++i)
+        printf("%c", ((char *)&primary_header->signature)[i]);
+    printf("\n");
 
 Free:
     free(zeroes);
     free(primary_header);
     free(backup_header);
+    free(gpt_image);
     close(fd);
 
-    return 0;
+    return;
 }
+
+
+void read_image(void)
+{
+    printf("read\n");
+    //uint32_t image_size = 16777216;
+    //int fd = open("disk-image.raw", O_RDONLY);
+    uint32_t image_size = 39424;
+    int fd = open("gpt.img", O_RDONLY);
+    if (fd < 0) {
+        perror("open");
+        return;
+    }
+
+    uint8_t *image = malloc(image_size);
+    read(fd, image, image_size);
+
+    ptr_gpt_header_t header = (ptr_gpt_header_t)(image + SECTOR_SIZE);
+    print_gpt_header(header);
+
+    // for (int i = 0; i < image_size; ++i) {
+    //     if (image[i] != 0)
+    //         printf("%d: %d\n", i, image[i]);
+    // }
+    printf("end\n");
+
+Free:
+    free(image);
+    close(fd);
+}
+
+
+int main(void)
+{
+    generate_image();
+    read_image();
+}
+

@@ -8,5 +8,7 @@ if arg == 'random':
 else:
     u = uuid.UUID(arg)
 
-print(u)
-print("{", ", ".join(hex(n) for n in u.bytes), "}")
+h = [hex(n) for n in u.bytes]
+
+print(h)
+#print("{", ", ".join(hex(n) for n in u.bytes), "}")

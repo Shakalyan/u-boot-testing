@@ -40,7 +40,6 @@ struct gpt_header {
     uint32_t number_of_partition_entries;
     uint32_t size_of_partition_entry;
     uint32_t partition_entry_array_crc32;
-    uint8_t  reserved2[SECTOR_SIZE-0x5c];
 } __attribute__ ((packed));
 typedef struct gpt_header gpt_header_t;
 typedef gpt_header_t* ptr_gpt_header_t;
@@ -52,9 +51,6 @@ struct gpt_entry {
     uint64_t ending_lba;
     uint64_t attributes;
     uint8_t  partition_name[PARTITION_NAME_SIZE];
-#if ENTRY_SIZE > 0x80
-    uint8_t  reserved[ENTRY_SIZE-0x80];
-#endif
 } __attribute__ ((packed));
 typedef struct gpt_entry gpt_entry_t;
 typedef gpt_entry_t* ptr_gpt_entry_t;
@@ -78,9 +74,9 @@ void print_gpt_header(ptr_gpt_header_t header);
 gpt_header_t* generate_gpt_header(ptr_gpt_entry_t entries, uint32_t entries_num,
                                   int is_primary, guid_t disk_guid);
 
-void make_gpt_image(int fd,
-                    uint8_t *mbr, uint8_t *partitions,
-                    ptr_gpt_header_t primary_header, ptr_gpt_header_t backup_header,
-                    ptr_gpt_entry_t entries);
+uint8_t* make_gpt_image(uint8_t *mbr, uint8_t *partitions,
+                        ptr_gpt_header_t primary_header, ptr_gpt_header_t backup_header,
+                        ptr_gpt_entry_t entries,
+                        uint32_t *size);
 
 #endif

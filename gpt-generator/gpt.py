@@ -30,8 +30,8 @@ def generate():
     print(disk)
 
 def read():
-    #disk = Disk.open("gpt.img")
-    disk = Disk.open("disk-image.raw")
+    disk = Disk.open("gpt.img")
+    #disk = Disk.open("disk-image.raw")
     print(disk)
 
 read()
