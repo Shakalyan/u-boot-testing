@@ -4,14 +4,15 @@
 #include <unistd.h>
 
 #include "gpt.h"
-#include "crc.h"
+//#include "crc.h"
+#include <zlib.h>
 
 
 const uint8_t EFI_SYSTEM_PARTITION_GUID[GUID_SIZE] =
-    { 0xc1, 0x2a, 0x73, 0x28, 0xf8, 0x1f, 0x11, 0xd2, 0xba, 0x4b, 0x0, 0xa0, 0xc9, 0x3e, 0xc9, 0x3b };
+    { 0x28, 0x73, 0x2a, 0xc1, 0x1f, 0xf8, 0xd2, 0x11, 0xba, 0x4b, 0x0, 0xa0, 0xc9, 0x3e, 0xc9, 0x3b };
 
 const uint8_t PROTECTIVE_MBR_PARTITION_GUID[GUID_SIZE] =
-    { 0x2, 0x4d, 0xee, 0x41, 0x33, 0xe7, 0x11, 0xd3, 0x9d, 0x69, 0x0, 0x8, 0xc7, 0x81, 0xf3, 0x9f };
+    { 0x41, 0xee, 0x4d, 0x02, 0xe7, 0x33, 0xd3, 0x11, 0x9d, 0x69, 0x00, 0x8, 0xc7, 0x81, 0xf3, 0x9f };
 
 
 gpt_header_t* generate_gpt_header(ptr_gpt_entry_t entries, uint32_t entries_num,
@@ -30,21 +31,26 @@ gpt_header_t* generate_gpt_header(ptr_gpt_entry_t entries, uint32_t entries_num,
         header->my_lba = GPT_HEADER_LBA;
         header->alternate_lba = backup_gpt_lba;
         header->partition_entry_lba = GPT_HEADER_LBA + 1;
+        //header->header_crc32 = 784699696;
         // primary header + entry array + partitions + entry array + alternate header
     } else {
         header->my_lba = backup_gpt_lba;
         header->alternate_lba = GPT_HEADER_LBA;
         header->partition_entry_lba = last_entry->ending_lba + 1;
+        //header->header_crc32 = 1627149267;
     }
 
-    header->first_usable_lba = entries[1].starting_lba;
+    header->first_usable_lba = entries[0].starting_lba; //entries[1].starting_lba;
     header->last_usable_lba = last_entry->ending_lba;
     memcpy(header->disk_guid, disk_guid, GUID_SIZE);
-    header->number_of_partition_entries = entries_num;
-    header->size_of_partition_entry = MINIMAL_GPT_ENTRY_ARRAY_SIZE;
-    header->partition_entry_array_crc32 = crc32((uint8_t *)entries, entries_num * sizeof(gpt_entry_t));
+    header->number_of_partition_entries = 128; //entries_num;
+    header->size_of_partition_entry = ENTRY_SIZE;
+    header->partition_entry_array_crc32 = 0; //crc32(0, (uint8_t *)entries, 128 * ENTRY_SIZE);// 252549571; //crc32((uint8_t *)entries, 128 * ENTRY_SIZE);
 
-    header->header_crc32 = crc32((uint8_t *)header, sizeof(gpt_header_t));
+    header->header_crc32 = 0;
+
+    uint32_t crc = crc32(0, Z_NULL, 0);
+    crc = crc32(crc, header, sizeof(gpt_header_t));
 
     return header;
 }
@@ -70,15 +76,17 @@ void add_gpt_entry(ptr_gpt_entry_t entries, int index,
                    uint64_t size,
                    uint64_t attributes, const char *name)
 {
+    int i = 0;
     uint64_t starting_lba = 0, ending_lba = 0;
     ptr_gpt_entry_t entry = &entries[index];
 
     if (index == 0) { // MBR
-        starting_lba = 0;
-    }
-    else if (index == 1) {
         starting_lba = MINIMAL_GPT_ENTRY_ARRAY_SIZE / SECTOR_SIZE + GPT_HEADER_LBA + 1;
+        //starting_lba = 0;
     }
+    // else if (index == 1) {
+    //     starting_lba = MINIMAL_GPT_ENTRY_ARRAY_SIZE / SECTOR_SIZE + GPT_HEADER_LBA + 1;
+    // }
     else {
         starting_lba = entries[index-1].ending_lba + 1;
     }
@@ -89,7 +97,11 @@ void add_gpt_entry(ptr_gpt_entry_t entries, int index,
     entry->starting_lba = starting_lba;
     entry->ending_lba = ending_lba;
     entry->attributes = attributes;
-    memcpy(entry->partition_name, name, PARTITION_NAME_SIZE);
+
+    for (i = 0; i < PARTITION_NAME_SIZE / 2; ++i) {
+        ((uint16_t *)entry->partition_name)[i] = (uint16_t)name[i];
+    }
+    //memcpy(entry->partition_name, name, PARTITION_NAME_SIZE);
 }
 
 void print_guid(guid_t guid)
@@ -154,9 +166,9 @@ uint8_t* make_gpt_image(uint8_t *mbr, uint8_t *partitions,
     printf("ASDFLKJ:SLDKJFASDFLKJ:SLDKJFASDFLKJ:SLDKJFASDFLKJ:SLDKJFASDFLKJ:SLDKJFASDFLKJ:SLDKJF: %d\n", primary_header->my_lba * SECTOR_SIZE);
     memcpy(image, mbr, SECTOR_SIZE);
     memcpy(image + primary_header->my_lba * SECTOR_SIZE, primary_header, sizeof(gpt_header_t));
-    memcpy(image + primary_header->partition_entry_lba * SECTOR_SIZE, entries, primary_header->size_of_partition_entry);
+    memcpy(image + primary_header->partition_entry_lba * SECTOR_SIZE, entries, MINIMAL_GPT_ENTRY_ARRAY_SIZE);
     memcpy(image + primary_header->first_usable_lba * SECTOR_SIZE, partitions, partitions_size);
-    memcpy(image + backup_header->partition_entry_lba * SECTOR_SIZE, entries, backup_header->size_of_partition_entry);
+    memcpy(image + backup_header->partition_entry_lba * SECTOR_SIZE, entries, MINIMAL_GPT_ENTRY_ARRAY_SIZE);
     memcpy(image + backup_header->my_lba * SECTOR_SIZE, backup_header, sizeof(gpt_header_t));
 
     for (int i = 0; i < image_size; ++i) {

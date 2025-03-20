@@ -10,5 +10,9 @@ else:
 
 h = [hex(n) for n in u.bytes]
 
-print(h)
-#print("{", ", ".join(hex(n) for n in u.bytes), "}")
+# h[0:4] = h[0:4][::-1]
+# h[4:6] = h[4:6][::-1]
+# h[6:8] = h[6:8][::-1]
+
+#print(h)
+print("{", ", ".join(h), "}")
