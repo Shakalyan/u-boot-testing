@@ -3,9 +3,11 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <string.h>
+#include <zlib.h>
 
 #include "gpt.h"
-#include <zlib.h>
+#include "mbr.h"
+
 
 //17c9e43f-5916-49fd-8edb-6afff08164af
 const uint8_t PARTITION_1_GUID[GUID_SIZE] =
@@ -36,9 +38,10 @@ void generate_image(void)
 
     memset(gpt_entries, 0, sizeof(gpt_entries));
 
-    MBR[SECTOR_SIZE-2] = 0x55;
-    MBR[SECTOR_SIZE-1] = 0xAA;
-    
+    // MBR[SECTOR_SIZE-2] = 0x55;
+    // MBR[SECTOR_SIZE-1] = 0xAA;
+    generate_protective_mbr(MBR, 0, 0);
+
 
     memset(partition_name, 0, PARTITION_NAME_SIZE);
     memcpy(partition_name, PARTITION_2_NAME, sizeof(PARTITION_2_NAME));
