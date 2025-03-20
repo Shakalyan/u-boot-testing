@@ -5,7 +5,7 @@
 #include <string.h>
 
 #include "gpt.h"
-#include "crc.h"
+#include <zlib.h>
 
 //17c9e43f-5916-49fd-8edb-6afff08164af
 const uint8_t PARTITION_1_GUID[GUID_SIZE] =
@@ -38,15 +38,7 @@ void generate_image(void)
 
     MBR[SECTOR_SIZE-2] = 0x55;
     MBR[SECTOR_SIZE-1] = 0xAA;
-    // memset(partition_name, 0, PARTITION_NAME_SIZE);
-    // memcpy(partition_name, PARTITION_1_NAME, sizeof(PARTITION_1_NAME));
-    // add_gpt_entry(gpt_entries, 0, PROTECTIVE_MBR_PARTITION_GUID, PARTITION_1_GUID, 1, 0, partition_name);
-
-    // memset(partition_name, 0, PARTITION_NAME_SIZE);
-    // memcpy(partition_name, PARTITION_2_NAME, sizeof(PARTITION_2_NAME));
-    // add_gpt_entry(gpt_entries, 1, EFI_SYSTEM_PARTITION_GUID, PARTITION_2_GUID, 10, 0, partition_name);
-    // primary_header = generate_gpt_header(gpt_entries, 2, 1, DISK_1_GUID);
-    // backup_header = generate_gpt_header(gpt_entries, 2, 0, DISK_1_GUID);
+    
 
     memset(partition_name, 0, PARTITION_NAME_SIZE);
     memcpy(partition_name, PARTITION_2_NAME, sizeof(PARTITION_2_NAME));
